@@ -1,0 +1,29 @@
+[project]
+name = "fcm-console-receiver"
+version = "0.1.0"
+description = "receive fcm notifications on console"
+requires-python = ">=3.14"
+dependencies = [
+    "colorama>=0.4.6", # Cross-platform colored terminal text.
+    "fcm-receiver>=0.1.1", # Client for receiving Firebase Cloud Messages.
+    "python-dotenv>=1.2.2", # Reads key-value pairs from .env files for environment variables.
+    "typer>=0.24.1"  # Library for building CLI applications with Python type hints.
+]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.19.0", # Packages into stand-alone executables.
+    "pytest-sugar>=1.1.1", # Pretty terminal reporter for pytest.
+    "pytest>=9.0.3", # Testing framework.
+    "ruff>=0.15.10", # Fast Python linter and formatter.
+]
+
+[project.scripts]
+fcm-console-receiver = "fcm_console_receiver.show_notifications:app"
+
+[tool.ruff]
+line-length = 120
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
