@@ -25,6 +25,13 @@ init(autoreset=True)
 load_dotenv()
 app = typer.Typer()
 
+
+def version_callback(value: bool):
+    if value:
+        print("fcm-console-receiver 0.3.0")
+        raise typer.Exit()
+
+
 ProjectId = Annotated[str, typer.Option(
     envvar="FCM_PROJECT_ID",
     prompt=True,
@@ -46,6 +53,12 @@ Topics = Annotated[list[str], typer.Option(
     default_factory=list,
     callback=lambda x: sorted(set(t.strip() for item in x for t in item.split(",") if t.strip())),
     show_default=False
+)]
+Version = Annotated[bool | None, typer.Option(
+    "--version",
+    help="Show version and exit.",
+    callback=version_callback,
+    is_eager=True
 )]
 
 
@@ -112,7 +125,7 @@ def unwrap(v):
 
 
 @app.command()
-def run(project_id: ProjectId, api_key: ApiKey, app_id: AppId, topics: Topics, debug: bool = False):
+def run(project_id: ProjectId, api_key: ApiKey, app_id: AppId, topics: Topics, debug: bool = False, _: Version = None):
     redefine_print(debug)
 
     client = FCMClient()
