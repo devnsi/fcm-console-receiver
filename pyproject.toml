@@ -1,13 +1,14 @@
 [project]
 name = "fcm-console-receiver"
-version = "0.1.0"
+version = "0.2.0"
 description = "receive fcm notifications on console"
 requires-python = ">=3.14"
 dependencies = [
     "colorama>=0.4.6", # Cross-platform colored terminal text.
     "fcm-receiver>=0.1.1", # Client for receiving Firebase Cloud Messages.
     "python-dotenv>=1.2.2", # Reads key-value pairs from .env files for environment variables.
-    "typer>=0.24.1"  # Library for building CLI applications with Python type hints.
+    "pygments>=2.20.0", # Syntax highlighter for various code formats and JSON.
+    "typer>=0.24.1", # Library for building CLI applications with Python type hints.
 ]
 
 [dependency-groups]
@@ -16,6 +17,10 @@ dev = [
     "pytest-sugar>=1.1.1", # Pretty terminal reporter for pytest.
     "pytest>=9.0.3", # Testing framework.
     "ruff>=0.15.10", # Fast Python linter and formatter.
+]
+experiments = [
+    "firebase-admin>=7.4.0", # Firebase Admin SDK for sending messages and project management.
+    "rich>=15.0.0", # Rich text and beautiful formatting in the terminal.
 ]
 
 [project.scripts]

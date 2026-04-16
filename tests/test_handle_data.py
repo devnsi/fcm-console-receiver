@@ -11,9 +11,9 @@ def test_handle_payload_full(captured_print):
             "body": "Database backup completed successfully."
         },
         "data": {
-            "google.c.a.ts": "1775932262",  # Should be filtered out
-            "custom_id": "998877",  # Should be kept
-            "priority_level": "high"  # Should be kept
+            "google.c.a.ts": "1775932262",
+            "custom_id": "998877",
+            "priority_level": "high",
         },
         "from": "/topics/alerts"
     }).encode('utf-8')
@@ -44,9 +44,8 @@ def test_handle_payload_custom(captured_print):
     # given
     payload = json.dumps({
         "data": {
-            "google.c.a.ts": "1775932262",  # Should be filtered out
-            "custom_id": "998877",  # Should be kept
-            "priority_level": "high"  # Should be kept
+            "custom_id": "998877",  # should be kept
+            "google.c.a.ts": "1775932262",  # should be filtered out
         }
     }).encode('utf-8')
     # when
@@ -54,6 +53,33 @@ def test_handle_payload_custom(captured_print):
     # then
     assert "custom_id" in captured_print()
     assert "google.c.a.ts" not in captured_print()
+
+
+def test_handle_payload_data_nested(captured_print):
+    # given
+    payload = json.dumps({
+        "data": {
+            "inner": json.dumps({
+                "nested": "value"
+            })
+        }
+    }).encode('utf-8')
+    # when
+    handle_data(payload, "test_client")
+    # then
+    assert "\\" not in captured_print()
+
+
+def test_handle_payload_priority(captured_print):
+    # given
+    payload = json.dumps({
+        "from": "/topics/alerts",
+        "priority": "high"
+    }).encode('utf-8')
+    # when
+    handle_data(payload, "test_client")
+    # then
+    assert "!" in captured_print()
 
 
 def test_handle_payload_repeated(captured_print):

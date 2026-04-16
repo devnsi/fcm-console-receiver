@@ -10,7 +10,7 @@ It provides a clean, colorized stream of incoming data and notification payloads
 ## Execution
 
 ```bash
-uv run https://github.com/devnsi/fcm-console-receiver/blob/main/src/fcm_console_receiver/show_notifications.py?raw=true 
+uv run https://github.com/devnsi/fcm-console-receiver/raw/refs/heads/main/src/fcm_console_receiver/show_notifications.py
 ```
 
 ## Interface

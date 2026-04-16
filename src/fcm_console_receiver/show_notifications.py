@@ -3,10 +3,12 @@
 # dependencies = [
 #   "colorama",
 #   "fcm-receiver",
+#   "pygments",
 #   "python-dotenv",
 #   "typer",
 # ]
 # ///
+
 import builtins
 import json
 import sys
@@ -18,6 +20,7 @@ import typer
 from colorama import Fore, Style, init
 from dotenv import load_dotenv
 from fcm_receiver import FCMClient
+from pygments import highlight, lexers, formatters
 
 init(autoreset=True)
 load_dotenv()
@@ -47,14 +50,15 @@ Topics = Annotated[list[str], typer.Option(
 )]
 
 
-def redefine_print():
+def redefine_print(debug: bool = False):
     print_lock = threading.Lock()
     print_actual = builtins.print
 
     def filtered_print(*args, **kwargs):
         msg = " ".join(map(str, args))
-        to_ignore = ["[fcm_socket]", "[fcm_client]"]
-        if any(msg.startswith(prefix) for prefix in to_ignore):
+        block_list = ["[fcm_socket]", "[fcm_client]"]
+        ignore_print = not debug and any(msg.startswith(prefix) for prefix in block_list)
+        if ignore_print:
             return
         with print_lock:
             print_actual(*args, **kwargs)
@@ -66,36 +70,58 @@ def handle_status(status: str, _: str = "") -> None:
     print(f"{Fore.LIGHTBLACK_EX}[status]{Style.RESET_ALL} {Fore.MAGENTA}{status}{Style.RESET_ALL}")
 
 
-def handle_data(payload: bytes, _: str) -> None:
-    # Extract details.
-    data = json.loads(payload.decode('utf-8'))
-    from_ = str(data.get("from", ""))
-    from_ = from_.replace("/topics/", "@") if "/" in from_ else ("console" if from_.isdigit() else from_)
-    notif = data.get("notification", {})
-    notif_title = notif.get("title", "Notification")
-    notif_body = notif.get("body", "").strip()
-    data_custom = data.get("data", {})
-    data_filtered = {k: v for k, v in data_custom.items() if not k.startswith(("google.", "gcm."))}
+def handle_data(payload: bytes, _: str, debug: bool = False) -> None:
+    try:
+        # Extract details.
+        payload_str = payload.decode('utf-8')
+        payload = json.loads(payload_str)
+        data = payload.get("data", {})
+        data_ = {k: unwrap(v) for k, v in data.items() if not k.startswith(("google.", "gcm."))}
+        from_ = payload.get("from") or data.get("topic") or ""
+        from_ = from_.replace("/topics/", "@") if "/" in from_ else ("@any" if from_.isdigit() else from_)
+        notif = payload.get("notification", {})
+        notif_title = notif.get("title") or data.get("title") or "Notification"
+        notif_body = notif.get("body") or data.get("body") or data.get("description") or ""
+        priority = payload.get("priority") or ""
 
-    # Print message.
-    msg_from = f"{Fore.LIGHTBLACK_EX}[{from_}]{Style.RESET_ALL}" if from_ else ""
-    msg_title = f"{Fore.YELLOW}{Style.BRIGHT}{notif_title}{Style.RESET_ALL}"
-    msg_body = f"| {notif_body}" if notif_body else ""
-    msg_data = f"{Style.DIM}{Fore.BLUE}{json.dumps(data_filtered)}{Style.RESET_ALL}" if data_filtered else ""
-    print(" ".join(part for part in [msg_from, msg_title, msg_body, msg_data] if part))
+        # Print message.
+        priorty_str = "!" if priority == "high" else ""
+        data_str = json.dumps(data_, indent=None, sort_keys=True)
+        data_colored = json_highlight(data_str, style="nord")
+        msg_from = f"{Fore.LIGHTBLACK_EX}[{from_}]{priorty_str}{Style.RESET_ALL}" if from_ else ""
+        msg_title = f"{Fore.YELLOW}{Style.BRIGHT}{notif_title}{Style.RESET_ALL}"
+        msg_body = f"| {notif_body}" if notif_body else ""
+        msg_data = f"{data_colored}" if data_ else ""
+        print(" ".join(part for part in [msg_from, msg_title, msg_body, msg_data] if part))
+        if debug:
+            payload_str = json.dumps(payload, indent=4, sort_keys=True)
+            payload_colored = json_highlight(payload_str, style="arduino")
+            print(f"{Fore.LIGHTBLACK_EX}[{from_}]{Fore.RESET} Raw | {payload_colored}")
+    except Exception as e:
+        print(f"{Fore.LIGHTBLACK_EX}[error]{Style.RESET_ALL} failed to receive: {Fore.RED}{e}{Fore.RESET}")
+
+
+def json_highlight(data: str, style: str):
+    return highlight(data, lexers.JsonLexer(), formatters.Terminal256Formatter(style=style)).strip()
+
+
+def unwrap(v):
+    try:
+        return json.loads(v) if isinstance(v, str) and v.startswith(("{", "[")) else v
+    except ValueError:
+        return v
 
 
 @app.command()
 def run(project_id: ProjectId, api_key: ApiKey, app_id: AppId, topics: Topics, debug: bool = False):
-    if not debug:
-        redefine_print()
+    redefine_print(debug)
 
     client = FCMClient()
     client.project_id = project_id
     client.api_key = api_key
     client.app_id = app_id
 
-    client.on_data_message = handle_data
+    client.on_data_message = lambda m, s: handle_data(m, s, debug)
     client.on_connection_status = handle_status
 
     try:
@@ -110,10 +136,10 @@ def run(project_id: ProjectId, api_key: ApiKey, app_id: AppId, topics: Topics, d
 
         client.start_listening()
         while True:
-            time.sleep(1)
+            time.sleep(100)
 
     except KeyboardInterrupt:
-        handle_status("stopping client...")
+        handle_status("stopping listener...")
     finally:
         client.close()
         sys.exit(0)
