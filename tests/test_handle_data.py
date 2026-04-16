@@ -70,6 +70,22 @@ def test_handle_payload_data_nested(captured_print):
     assert "\\" not in captured_print()
 
 
+def test_handle_payload_title(captured_print):
+    # given
+    payload = json.dumps({
+        "data": {
+            "title": "from-data-title",
+            "description": "from-data-description",
+        },
+    }).encode('utf-8')
+    # when
+    handle_data(payload, "test_client")
+    # then
+    assert "Notification" not in captured_print()
+    assert "from-data-title" in captured_print()
+    assert "from-data-description" in captured_print()
+
+
 def test_handle_payload_priority(captured_print):
     # given
     payload = json.dumps({

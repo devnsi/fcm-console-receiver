@@ -11,7 +11,6 @@
 
 import builtins
 import json
-import sys
 import threading
 import time
 from typing import Annotated
@@ -76,25 +75,25 @@ def handle_data(payload: bytes, _: str, debug: bool = False) -> None:
         payload_str = payload.decode('utf-8')
         payload = json.loads(payload_str)
         data = payload.get("data", {})
-        data_ = {k: unwrap(v) for k, v in data.items() if not k.startswith(("google.", "gcm."))}
+        data = {k: unwrap(v) for k, v in data.items() if not k.startswith(("google.", "gcm."))}
         from_ = payload.get("from") or data.get("topic") or ""
         from_ = from_.replace("/topics/", "@") if "/" in from_ else ("@any" if from_.isdigit() else from_)
         notif = payload.get("notification", {})
-        notif_title = notif.get("title") or data.get("title") or "Notification"
-        notif_body = notif.get("body") or data.get("body") or data.get("description") or ""
+        notif_title = notif.get("title") or data.pop("title", None) or "Notification"
+        notif_body = notif.get("body") or data.pop("body", None) or data.pop("description", None) or ""
         priority = payload.get("priority") or ""
 
         # Print message.
-        priorty_str = "!" if priority == "high" else ""
-        data_str = json.dumps(data_, indent=None, sort_keys=True)
+        priority_str = "!" if priority == "high" else ""
+        data_str = json.dumps(data, indent=None, sort_keys=True, ensure_ascii=False)
         data_colored = json_highlight(data_str, style="nord")
-        msg_from = f"{Fore.LIGHTBLACK_EX}[{from_}]{priorty_str}{Style.RESET_ALL}" if from_ else ""
+        msg_from = f"{Fore.LIGHTBLACK_EX}[{from_}]{priority_str}{Style.RESET_ALL}" if from_ else ""
         msg_title = f"{Fore.YELLOW}{Style.BRIGHT}{notif_title}{Style.RESET_ALL}"
         msg_body = f"| {notif_body}" if notif_body else ""
-        msg_data = f"{data_colored}" if data_ else ""
+        msg_data = f"{data_colored}" if data else ""
         print(" ".join(part for part in [msg_from, msg_title, msg_body, msg_data] if part))
         if debug:
-            payload_str = json.dumps(payload, indent=4, sort_keys=True)
+            payload_str = json.dumps(payload, indent=4, sort_keys=True, ensure_ascii=False)
             payload_colored = json_highlight(payload_str, style="arduino")
             print(f"{Fore.LIGHTBLACK_EX}[{from_}]{Fore.RESET} Raw | {payload_colored}")
     except Exception as e:
@@ -142,7 +141,6 @@ def run(project_id: ProjectId, api_key: ApiKey, app_id: AppId, topics: Topics, d
         handle_status("stopping listener...")
     finally:
         client.close()
-        sys.exit(0)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 [project]
 name = "fcm-console-receiver"
-version = "0.2.0"
+version = "0.3.0"
 description = "receive fcm notifications on console"
 requires-python = ">=3.14"
 dependencies = [
@@ -16,7 +16,7 @@ dev = [
     "pyinstaller>=6.19.0", # Packages into stand-alone executables.
     "pytest-sugar>=1.1.1", # Pretty terminal reporter for pytest.
     "pytest>=9.0.3", # Testing framework.
-    "ruff>=0.15.10", # Fast Python linter and formatter.
+    "ruff>=0.15.11", # Fast Python linter and formatter.
 ]
 experiments = [
     "firebase-admin>=7.4.0", # Firebase Admin SDK for sending messages and project management.
