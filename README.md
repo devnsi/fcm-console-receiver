@@ -24,6 +24,7 @@ uv run https://github.com/devnsi/fcm-console-receiver/raw/refs/heads/main/src/fc
 │ *  --app-id                TEXT  Unique App ID for the registered client. [env var: FCM_APP_ID] [required]         │
 │    --topic                 TEXT  Topic to subscribe to. Can be used multiple times. [env var: FCM_TOPICS]          │
 │    --debug                       [default: no-debug]                                                               │
+│    --version                     Show version and exit.                                                            │
 │    --install-completion          Install completion for the current shell.                                         │
 │    --show-completion             Show completion for the current shell, to copy it or customize the installation.  │
 │    --help                        Show this message and exit.                                                       │
